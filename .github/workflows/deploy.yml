@@ -1,4 +1,4 @@
- name: Deploy to EC2
+name: Deploy to EC2 using Docker Compose
 
 on:
   push:
@@ -10,27 +10,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Connect to EC2 and deploy
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_KEY }}
-        script: |
-          cd ${{ secrets.EC2_PATH }}
+      - name: Connect to EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.EC2_APP_PATH }}
 
-          echo "👉 Stopping old docker container..."
-          docker stop myapp || true
-          docker rm myapp || true
+            echo "🛑 Stopping old containers"
+            docker compose down || true
 
-          echo "👉 Pulling latest code..."
-          git pull origin main
+            echo "📥 Pulling latest code"
+            git pull origin main
 
-          echo "👉 Building new Docker image..."
-          docker build -t myapp .
+            echo "🐳 Rebuilding containers"
+            docker compose up -d --build
 
-          echo "👉 Running new Docker container..."
-          docker run -d --name myapp -p 80:80 myapp
+            echo "🚀 Deployment completed successfully!"
