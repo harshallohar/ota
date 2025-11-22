@@ -1,0 +1,36 @@
+ name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Connect to EC2 and deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          cd ${{ secrets.EC2_PATH }}
+
+          echo "👉 Stopping old docker container..."
+          docker stop myapp || true
+          docker rm myapp || true
+
+          echo "👉 Pulling latest code..."
+          git pull origin main
+
+          echo "👉 Building new Docker image..."
+          docker build -t myapp .
+
+          echo "👉 Running new Docker container..."
+          docker run -d --name myapp -p 80:80 myapp
